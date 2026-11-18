@@ -1,0 +1,128 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+
+@model EditProfileViewModel
+
+<div id="edit-profile-modal" class="d-modal-screen">
+    <div class="edit-profile-modal-container">
+        <div class="edit-profile-modal-top">
+            <img src="/Resources/crossCloseCard.svg" onclick="closeModal()" />
+        </div>
+        <div class="edit-profile-modal-content">
+            <div class="edit-profile-content-container">
+                <div class="edit-profile-content-header">
+                    Редактирование профиля
+                </div>
+                <div class="edit-profile-content">
+                    <div class="edit-profile-content-label">
+                        Имя
+                    </div>
+                    <div>
+                        <input type="text" class="edit-profile-input" id="firstNameEdit" value="@(Model.user.FirstName != null ? Model.user.FirstName : "")" />
+                    </div>
+                </div>
+                <div class="edit-profile-content">
+                    <div class="edit-profile-content-label">
+                        Фамилия
+                    </div>
+                    <div>
+                        <input type="text" class="edit-profile-input" id="lastNameEdit" value="@(Model.user.LastName != null ? Model.user.LastName : "")" />
+                    </div>
+                </div>
+                <div class="edit-profile-content">
+                    <div class="edit-profile-content-label">
+                        Дата рождения
+                    </div>
+                    <div>
+                        <input type="date" class="edit-profile-input" id="dateBirthdayEdit" value="@((Model.user.DateBirthday.HasValue) ? Model.user.DateBirthday.Value.ToString("yyyy-MM-dd") : "")" />
+                    </div>
+                </div>
+                <div class="edit-profile-content">
+                    <div class="edit-profile-content-label">
+                        Номер телефона
+                    </div>
+                    <div>
+                        <input type="text" class="edit-profile-input" id="phoneEdit" value="@(Model.user.PhoneNumber != null ? Model.user.PhoneNumber : "")" />
+                    </div>
+                </div>
+                @* <div class="edit-profile-content">
+                    <div class="edit-profile-content-label">
+                        Эл. почта
+                    </div>
+                    <div>
+                        <input type="text" class="edit-profile-input" id="emailEdit" value="@(Model.user.Email != null ? Model.user.Email : "")" />
+                    </div>
+                </div> *@
+                <div class="edit-profile-content">
+                    <button class="button-continue" onclick="saveProfile()">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function closeModal() {
+        document.getElementById('edit-profile-modal').style.display = 'none';
+
+        $('body').css({
+            'overflow-y': '',
+            'padding-right': ''
+        });
+    }
+
+    function saveProfile() {
+        // Вернуть при переходе на смс
+        var firstName = document.getElementById('firstNameEdit').value;
+        var lastName = document.getElementById('lastNameEdit').value;
+        var dateBirthday = document.getElementById('dateBirthdayEdit').value;
+        var phoneNumber = document.getElementById('phoneEdit').value;
+        // var email = document.getElementById('emailEdit').value;
+
+        var profileData = {
+            firstName: firstName,
+            lastName: lastName,
+            dateBirthday: dateBirthday || "",
+            phoneNumber: phoneNumber
+            // email: email
+        };
+
+        console.log("Profile Data: ", profileData);  // Debug output
+
+        // Отправляем данные в контроллер
+        $.ajax({
+            type: 'POST',
+            url: '@Url.Action("SaveProfile", "Profile")',
+            contentType: 'application/json',
+            data: JSON.stringify(profileData),
+            success: function (response) {
+                if (response.success) {
+                    alert('Профиль успешно обновлен');
+                    updateProfileData(profileData);
+                    closeModal();
+                    // Дополнительные действия после успешного обновления
+                } else {
+                    console.error(response.message);  // Debug output
+                    alert('Ошибка обновления профиля: ' + response.message);
+                }
+            },
+            error: function (xhr, status, error) {
+                console.error(error);  // Debug output
+                alert('Ошибка обновления профиля');
+            }
+        });
+    }
+
+    function updateProfileData(profileData) {
+        console.log('Update data');
+        // Обновляем элементы страницы новыми данными
+        document.getElementById('firstName').innerText = profileData.firstName;
+        document.getElementById('lastName').innerText = profileData.lastName;
+        document.getElementById('dateBirthday').innerText = profileData.dateBirthday;
+        document.getElementById('phoneNumber').innerText = profileData.phoneNumber;
+        // document.getElementById('email').innerText = profileData.email;
+    }
+</script>

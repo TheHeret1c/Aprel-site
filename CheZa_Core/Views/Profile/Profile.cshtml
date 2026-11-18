@@ -1,0 +1,322 @@
+﻿@{
+    ViewData["Title"] = "Радуем вас с 2012 года | Отрадное";
+
+    
+}
+
+@model ProfileViewModel
+
+
+<div class="container-fluid">
+    <div class="sidebar">
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link active" href="#" onclick="showTab('personal-info')">
+                    Профиль
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" onclick="showTab('order-history')">
+                    История заказов
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" onclick="showTab('addresses')">
+                    Адреса
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" onclick="showTab('favourites')">
+                    Избранное
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" onclick="showTab('logout')">
+                    Выход
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="content">
+        <div id="personal-info" class="tab-content active">
+            <h2>Профиль</h2>
+            <div class="form-group">
+                <label for="firstName">Имя</label>
+                <input type="text" class="form-control" id="firstName" value="@(Model.user.FirstName != null ? Model.user.FirstName : "")" readonly="readonly">
+            </div>
+            <div class="form-group">
+                <label for="lastName">Фамилия</label>
+                <input type="text" class="form-control" id="lastName" value="@(Model.user.LastName != null ? Model.user.LastName : "")" readonly="readonly">
+            </div>
+            <div class="form-group">
+                <label for="phoneNumber">Телефон</label>
+                <input type="tel" class="form-control" id="phoneNumber" value="@Model.user.PhoneNumber" readonly="readonly">
+            </div>
+            <div class="form-group">
+                <label for="dob">Дата рождения</label>
+                <input type="date" class="form-control" id="dob" value="@(Model.user.DateBirthday?.ToString("yyyy-MM-dd") ?? "")" readonly="readonly">
+            </div>
+            <div class="form-group">
+                <label for="email">Электронная почта</label>
+                <input type="email" class="form-control" id="email" value="@(Model.user.Email != null ? Model.user.Email : "")" readonly="readonly">
+            </div>
+            <button class="button-continue" onclick="openEditProfileModal()">Редактировать</button>
+        </div>
+
+        <div id="order-history" class="tab-content">
+            <h2>История заказов</h2>
+            <!-- Содержимое истории заказов -->
+            <div class="history-container">
+                <div class="history-header">
+                    <div>Номер</div>
+                    <div>Дата</div>
+                    <div>Сумма</div>
+                    <div>Статус</div>
+                </div>
+                <div class="history-list">
+                    @{
+                        int countOrders = 0;
+                        foreach(var order in Model.orders)
+                        {
+                            Console.WriteLine("Order. Order date: " + order.OrderDate + ". Order total amount: " + order.TotalAmount + ". Order status: " + order.StatusId + ". Order status2: " + order.OrderStatus);
+                            countOrders++;
+                            <div class="history-list-item" onclick="openOrderModal(@order.OrderId)">
+                                <div>@order.OrderId</div>
+                                <div>@order.OrderDate</div>
+                                <div>@order.TotalAmount</div>
+                                <div>@order.OrderStatus.StatusName</div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div id="addresses" class="tab-content">
+            <h2>Адреса</h2>
+            <!-- Содержимое адресов -->
+            <div class="address-container">
+                <div class="address-list"> @*Список адресов*@
+                    @{
+                        foreach (var address in Model.addresses)
+                        {
+                            <div class="address-list-item @(Model.selectAddress == address.AddressId ? "selected-address" : "")" onclick="openAddressModal(@address.AddressId)">
+                                <div class="address-list-item-img">
+                                    <div class="address-list-item-img-container">
+                                        <img src="~/Resources/location.svg" />
+                                    </div>
+                                </div>
+                                <div class="address-list-item-address">
+                                    <div>
+                                        @address.StreetAddress
+                                    </div>
+                                    <div>
+                                        @{
+                                            string partAddress = "Дом " + address.House;
+                                            if (address.Floor != null)
+                                            {
+                                                partAddress += ", этаж " + address.Floor;
+                                            }
+                                            if (address.Apartment != null)
+                                            {
+                                                partAddress += ", квартира " + address.Apartment;
+                                            }
+                                            <span>@partAddress</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="address-list-item-arrow">
+                                    <img src="~/Resources/arrow-right.svg" />
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+                <div class="address-btn-add"> @*Кнопка добавить адрес*@
+                    <button class="button-continue" onclick="openAddAddressModal()">Добавить адрес</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="favourites" class="tab-content">
+            <h2>Избранное</h2>
+            <!-- Содержимое избранного -->
+            <div class="product-grid" style="justify-content: flex-start; margin-top: 20px;">
+                @foreach (var product in Model.menu._products)
+                {
+                    bool isFavorite = Model.favourites.Contains(product.id);
+
+                    if (isFavorite)
+                    {
+                        <a class="product-link" id="@product.id" onclick="openModal('@product.id')">
+                            <div class="product-tile">
+                                <div class="product-favorite favorited" id="favorite-@product.id" onclick="deleteFavorite('@product.id'); event.stopPropagation();">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-heart">
+                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                    </svg>
+                                </div>
+                                <div class="product-image">
+                                    <img src="@(product.imageLinks != null && product.imageLinks.Length > 0 ? product.imageLinks[0] : "")" alt="@product.name" />
+                                </div>
+                                <div class="product-details">
+                                    <p class="product-name">@product.name</p>
+                                    <p class="product-description">@product.seoDescription</p>
+                                </div>
+                                <div class="product-bottom">
+                                    <div class="product-price">от @product.sizePrices[0].price.currentPrice ₽</div>
+                                    <div class="product-button">
+                                        <button>Выбрать</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    }
+                }
+            </div>
+        </div>
+
+        <div id="logout" class="tab-content">
+            <h2>Выход</h2>
+            <!-- Содержимое выхода -->
+            <div class="logout-container">
+                <button id="logout-button" class="button-logout" onclick="logout()">Выйти</button>
+                @Html.AntiForgeryToken()
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="edit-profile-modal-container"></div>
+<div id="order-modal-container"></div>
+<div id="edit-address-modal-container"></div>
+<div id="address-modal-container"></div>
+<div id="select-address-modal-container"></div>
+
+<script>
+    function openEditProfileModal() {
+        var scrollbarWidth = getScrollbarWidth();
+                $('body').css({
+                    'overflow-y': 'hidden',
+                    'padding-right': scrollbarWidth + 'px'
+                });
+                
+        $.get('@Url.Action("GetEditProfile", "Profile")', function (data) {
+            $('#edit-profile-modal-container').html(data);
+            $('#edit-profile-modal').show();
+        });
+    }
+
+    function openOrderModal(orderId) {
+        var scrollbarWidth = getScrollbarWidth();
+                $('body').css({
+                    'overflow-y': 'hidden',
+                    'padding-right': scrollbarWidth + 'px'
+                });
+                
+        $.get('@Url.Action("GetOrder", "Profile")', {orderId : orderId}, function (data) {
+            $('#order-modal-container').html(data);
+            $('#order-modal').show();
+        });
+    }
+
+    function openAddAddressModal() {
+        var scrollbarWidth = getScrollbarWidth();
+                $('body').css({
+                    'overflow-y': 'hidden',
+                    'padding-right': scrollbarWidth + 'px'
+                });
+                
+        $.get('@Url.Action("AddAddress", "Profile")', {addressId : 0}, function (data) {
+            $('#address-modal-container').html(data);
+            $('#address-modal').show();
+        });
+    }
+
+    function openAddressModal(addressId) {
+        var scrollbarWidth = getScrollbarWidth();
+        $('body').css({
+            'overflow-y': 'hidden',
+            'padding-right': scrollbarWidth + 'px'
+        });
+
+        $.get('@Url.Action("AddAddress", "Profile")', {addressId : addressId}, function (data) {
+            $('#address-modal-container').html(data);
+            $('#address-modal').show();
+        });
+    }
+
+    function showTab(tabId) {
+        var tabs = document.getElementsByClassName('tab-content');
+        for (var i = 0; i < tabs.length; i++) {
+            tabs[i].style.display = 'none';
+        }
+        document.getElementById(tabId).style.display = 'block';
+
+        var navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(function (link) {
+            link.classList.remove('active');
+        });
+        var activeLink = document.querySelector('[onclick="showTab(\'' + tabId + '\')"]');
+        if (activeLink) {
+            activeLink.classList.add('active');
+        }
+    }
+
+    // Показать первую вкладку по умолчанию
+    document.addEventListener('DOMContentLoaded', function () {
+        showTab('personal-info');
+    });
+
+    function deleteFavorite(productId) {
+        var favoriteIcon = $('#favorite-' + productId);
+
+        $.ajax({
+            type: "POST",
+            url: "/Home/ToggleFavorite",
+            data: JSON.stringify({ productId: productId }),
+            contentType: "application/json",
+            success: function (response) {
+                if (response.success) {
+                    favoriteIcon.toggleClass('favorited');
+                    document.getElementById(productId).remove();
+                } else {
+                    alert(response.message);
+                }
+            },
+            error: function (xhr, status, error) {
+                if (xhr.status == 401) {
+                    alert('Необходимо авторизоваться!');
+                } else {
+                    alert('Произошла ошибка. Пожалуйста, попробуйте снова.');
+                }
+            }
+        });
+    }
+
+    function logout() {
+        if (confirm("Вы уверены, что хотите выйти?")) {
+            // Получение значения токена CSRF
+            var token = $('input[name="__RequestVerificationToken"]').val();
+
+            // Отправка AJAX запроса на выход
+            $.ajax({
+                url: '/Auth/Logout', // URL контроллера для выхода
+                type: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': token // Передача токена CSRF в заголовке запроса
+                },
+                success: function (response) {
+                    // Перенаправление на указанный URL после выхода
+                    window.location.href = response.redirectToUrl;
+                },
+                error: function (xhr, status, error) {
+                    console.error('Ошибка при выходе:', error);
+                    alert('Ошибка при выходе из системы.');
+                }
+            });
+        }
+    }
+</script>
+

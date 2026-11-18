@@ -1,0 +1,238 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Чёза - @ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/CheZa_Core.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css">
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=@Configuration["YandexMaps:ApiKey"]&lang=ru_RU"></script>
+    <!-- Подключаем CSS для Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <!-- Подключаем JS для Leaflet -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <!-- Подключаем jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Подключаем Leaflet Control Geocoder -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="https://kit.fontawesome.com/5ea815c1d0.js"></script>
+    <!-- Библиотека для ленивой загрузки страницы -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/lozad/dist/lozad.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/autoComplete.js/10.2.7/autoComplete.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/autoComplete.js/10.2.7/autoComplete.min.js"></script>
+</head>
+<body>
+    @{
+        var isAuthenticated = User.Identity.IsAuthenticated;
+    }
+
+    <div id="background-site" class="background">
+
+    </div>
+    @* var externalDataKey = "generalInfo";
+    var order = Model.Order;
+    var externalData = Model.Order.externalData?.FirstOrDefault(data => data.key == externalDataKey)?.Value;
+    ooo_name =  new []{"Бар"};
+
+    @if (!string.IsNullOrEmpty(externalData))
+    {
+        <np />
+        <center>
+            @externalData
+        </center>
+        <np />
+    } *@
+    <header>
+        <div class="d-header">
+            <div class="header-content">
+                Радуем вас с 2012 года
+                <b><a href="@Url.Action("Index", "Home")" style="color: inherit; text-decoration: none; font-size: 14pt;">Чёза</a></b>
+            </div>
+            <div class="header-content">
+                Телефон доставки
+                <a href="tel:+79219566499" style="color: inherit; text-decoration: none; font-size: 14pt;">
+                    +7 (921) 956-64-99
+                </a>
+            </div>
+            <div class="header-content">
+                Бесплатная доставка
+                <b style=" font-size: 14pt;">от 1000 руб</b>
+            </div>
+            <div id="address" class="header-content">
+                <label id="delivery-type">Адрес самовывоза:</label>
+                <label id="delivery-address">Отрадное, Детский переулок 1</label>
+            </div>
+            <div id="swiper" class="header-content">
+                <div class="switch-button">
+                    <input class="switch-button-checkbox" type="checkbox"></input>
+                    <label class="switch-button-label" for="" data-text="Самовывоз">
+                        <span class="switch-button-label-span">
+                            <img src="~/Resources/delivery.svg" />
+                        </span>
+                    </label>
+                </div>
+            </div>
+            <div id="btn-login" class="header-content">
+                <button id="auth-button" class="button-test button-test-primary" role="button" onclick="openAuthModal()">Войти</button>
+            </div>
+        </div>
+    </header>
+
+
+
+    <div @* class="container" *@>
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted" style="background-color: #495057;">
+        <div class="container">
+            @* &copy; 2024 - Чёза - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a> *@
+            <div class="footer-container">
+                <div class="footer-container-logo">
+                    <a href="@Url.Action("Index", "Home")" style="color: inherit; text-decoration: none;">
+                        <div class="container-logo">
+                            <img src="~/Resources/logo.png" alt="Logo" />
+                        </div>
+                    </a>
+                </div>
+                <div class="footer-container-info">
+                    <div class="container-info">
+                        <div class="info-header">
+                            Радуем вас с 2012 года Чёза
+                        </div>
+                        <div class="info-text">
+                            <a href="tel:+79219566499" style="color: inherit; text-decoration: none;">
+                                +7 (921) 956-64-99
+                            </a>
+                        </div>
+                        <div class="info-text">
+                            Работаем сегодня с 12:00 до 22:50
+                        </div>
+                        <div class="info-text">
+                            Отрадное, Ленинградская область, Кировский район, Отрадное, Детский переулок д. 1
+                        </div>
+                        <div class="info-text">
+                            <a href="https://vk.com/chozza" target="_blank" style="color: inherit; text-decoration: none;">ВКонтакте</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-container-links">
+                    <div class="container-links">
+                        <div class="info-text">
+                            <a href="#" style="color: inherit; text-decoration: none;">Публичная оферта</a>
+                        </div>
+                        <div class="info-text">
+                            <a href="#" style="color: inherit; text-decoration: none;">Пользовательское соглашение</a>
+                        </div>
+                        <div class="info-text">
+                            <a href="#" style="color: inherit; text-decoration: none;">Политика обработки персональных данных</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-element-bundle.min.js"></script>
+    <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const checkbox = document.querySelector('.switch-button-checkbox');
+                const labelType = document.getElementById('delivery-type');
+                const labelAddress = document.getElementById('delivery-address');
+
+            const labelInit = document.querySelector('.switch-button-label');
+            const labelTextInit = labelInit.getAttribute('data-text'); // Получаем начальный текст из атрибута data-text
+
+            // Восстанавливаем состояние переключателя из localStorage
+            if (localStorage.getItem("toggleSwitchDeliveryState") === "true") {
+                checkbox.checked = true;
+                labelInit.setAttribute('data-text', 'Доставка'); // Устанавливаем новый текст в атрибут data-text
+                labelType.innerText = 'Адрес доставки:';
+            } else {
+                checkbox.checked = false;
+            }
+
+                checkbox.addEventListener('change', function () {
+                    const label = document.querySelector('.switch-button-label');
+                    const labelText = label.getAttribute('data-text'); // Получаем начальный текст из атрибута data-text
+
+                    var isAuthenticated = @isAuthenticated.ToString().ToLower();
+                    if (!isAuthenticated) {
+                        alert("Вы не авторизованы. Пожалуйста, войдите в систему.");
+                        this.checked = false;
+                    localStorage.setItem("toggleSwitchDeliveryState", checkbox.checked);
+                        return;
+                    }
+
+                    if (this.checked) {
+                        openSelectAddressModal();
+                        label.setAttribute('data-text', 'Доставка'); // Устанавливаем новый текст в атрибут data-text
+                        labelType.innerText = 'Адрес доставки:';
+                    } else {
+                        label.setAttribute('data-text', 'Самовывоз'); // Устанавливаем новый текст в атрибут data-text
+                        labelType.innerText = 'Адрес самовывоза:';
+                        labelAddress.innerText = 'Отрадное, Детский переулок 1';
+
+                        $.ajax({
+                            type: "POST",
+                            url: "/Profile/SetSelectAddress",
+                            contentType: 'application/json',
+                            data: { addressId: 0 },
+                            success: function (response) {
+                                if (response.success) {
+                                    alert(response.message);
+                                }
+                            },
+                            error: function (error) {
+                                if (error.status == 401) {
+                                    alert('Необходимо авторизоваться!');
+                                } else {
+                                    console.error("Ошибка при отправке адреса на сервер:", error);
+                                }
+                            }
+                        });
+                    }
+
+                localStorage.setItem("toggleSwitchDeliveryState", checkbox.checked);
+                });
+            });
+    </script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const observer = lozad(); // Автоматически будет наблюдать за всеми элементами с классом "lozad"
+            observer.observe();
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var authButton = document.getElementById('auth-button');
+            console.log('Я в лейауте');
+            if (authButton) {
+                console.log('User: ' + @Html.Raw(Json.Serialize(ViewBag.userName)));
+                var isAuthenticated = @Html.Raw(Json.Serialize(!string.IsNullOrEmpty(ViewBag.userName)));
+                console.log('Is authenticated:', isAuthenticated);
+                if (isAuthenticated) {
+                    authButton.innerText = 'Профиль';
+                } else {
+                    authButton.innerText = 'Войти';
+                }
+            }
+        });
+        function openSelectAddressModal() {
+            console.log('Send modal');
+            $.get('@Url.Action("GetAddresses", "Profile")', function (data) {
+                $('#select-address-modal-container').html(data);
+                $('#select-address-modal').show();
+            });
+        }
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

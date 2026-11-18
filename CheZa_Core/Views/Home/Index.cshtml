@@ -1,0 +1,459 @@
+﻿@{
+    ViewData["Title"] = "Радуем вас с 2012 года | Отрадное";
+
+    // Определение функции для получения транслитерированных категорий
+    string GetTransliteratedCategories()
+    {
+        var transliteratedCategories = string.Join(",", Model.menu._categories.Where(category => category != "Суши модификаторы" && category != "Пицца модификаторы" && category != "Добавки к пицце" && category != "Добавки к суши").Select(category => transliterate(category)));
+        return transliteratedCategories;
+    }
+}
+@using System.Globalization;
+
+@functions {
+    // Функция для транслитерации строки
+    string transliterate(string text)
+    {
+        var translit = new Dictionary<char, string>
+        {
+            {'а', "a"}, {'б', "b"}, {'в', "v"}, {'г', "g"}, {'д', "d"}, {'е', "e"}, {'ё', "yo"},
+            {'ж', "zh"}, {'з', "z"}, {'и', "i"}, {'й', "y"}, {'к', "k"}, {'л', "l"}, {'м', "m"},
+            {'н', "n"}, {'о', "o"}, {'п', "p"}, {'р', "r"}, {'с', "s"}, {'т', "t"}, {'у', "u"},
+            {'ф', "f"}, {'х', "h"}, {'ц', "c"}, {'ч', "ch"}, {'ш', "sh"}, {'щ', "sch"}, {'ъ', ""},
+            {'ы', "y"}, {'ь', ""}, {'э', "e"}, {'ю', "yu"}, {'я', "ya"}, {' ', "-"}
+        };
+
+        var result = new List<char>();
+
+        if (text != null)
+        {
+            foreach (var ch in text.ToLower())
+            {
+                if (translit.ContainsKey(ch))
+                    result.AddRange(translit[ch]);
+                else
+                    result.Add(ch);
+            }
+        }
+
+        return new string(result.ToArray());
+    }
+}
+
+    @model IndexViewModel
+
+<body>
+    <input type="hidden" id="transliteratedCategories" value="@GetTransliteratedCategories()" />
+
+    <div class="swiper">
+        <swiper-container class="mySwiper" navigation="true"
+                          space-between="30" centered-slides="true" autoplay-delay="4500" autoplay-disable-on-interaction="false"
+                          slides-per-view="1.5" loop="true" style="margin-top: 20px;">
+            <swiper-slide style="border-radius: 1em; overflow: hidden"><img src="~/Resources/headerv2.jpeg" alt="Banner 1"></swiper-slide>
+            <swiper-slide style="border-radius: 1em; overflow: hidden"><img src="~/Resources/headerv2.jpeg" alt="Banner 2"></swiper-slide>
+            <swiper-slide style="border-radius: 1em; overflow: hidden"><img src="~/Resources/headerv2.jpeg" alt="Banner 3"></swiper-slide>
+            <swiper-slide style="border-radius: 1em; overflow: hidden"><img src="~/Resources/headerv2.jpeg" alt="Banner 4"></swiper-slide>
+            <swiper-slide style="border-radius: 1em; overflow: hidden"><img src="~/Resources/headerv2.jpeg" alt="Banner 5"></swiper-slide>
+            <swiper-slide style="border-radius: 1em; overflow: hidden"><img src="~/Resources/headerv2.jpeg" alt="Banner 6"></swiper-slide>
+            <swiper-slide style="border-radius: 1em; overflow: hidden"><img src="~/Resources/headerv2.jpeg" alt="Banner 7"></swiper-slide>
+            <swiper-slide style="border-radius: 1em; overflow: hidden"><img src="~/Resources/headerv2.jpeg" alt="Banner 8"></swiper-slide>
+            <swiper-slide style="border-radius: 1em; overflow: hidden"><img src="~/Resources/headerv2.jpeg" alt="Banner 9"></swiper-slide>
+        </swiper-container>
+    </div>
+
+    <div class="d-often-order">
+        <div class="container">
+            <div>
+                Часто заказывают
+            </div>
+            <div>
+                <div> @*Плитка*@
+                    <div> @*Картинка*@
+
+                    </div>
+                    <div> @*Название и цена*@
+                        <div>
+
+                        </div>
+                        <div>
+
+                        </div>
+                    </div>
+                </div>
+                <div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="filters-container" class="d-filters-container">
+        <div class="container d-filters-content">
+            <!-- Добавлен контейнер для прокрутки фильтров -->
+            <div id="filters-scroll" class="filters-scroll">
+                @foreach (var category in Model.menu._categories)
+                {
+                    if (category == "Суши модификаторы" || category == "Пицца модификаторы" || category == "Добавки к пицце" || category == "Добавки к суши" || category == "")
+                    {
+                        continue;
+                    }
+
+                    var transliteratedCategory = transliterate(category); // Транслитерация категории
+                    <a href="#" onclick="scrollToCategory('@transliteratedCategory'); return false;" class="category" data-category="@transliteratedCategory">@category</a>
+                }
+            </div>
+            <!-- Добавлен контейнер для корзины с начальным стилем display: none -->
+            <div id="cart-container" class="d-cart-container" style="display: none;">
+                <div onclick="openCartModal()" class="d-cart-button-container">
+                    <div id="cart-images">
+                    </div>
+                    <div id="cart-quantity">
+                    </div>
+                    <div class="cart-divider">
+                    </div>
+                    <div id="cart-amount">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="container">
+        @*Сетка продуктов*@
+
+        @foreach (var category in Model.menu._categories)
+        {
+            if (category == "Суши модификаторы" || category == "Пицца модификаторы" || category == "Добавки к пицце" || category == "Добавки к суши" || category == "")
+            {
+                continue;
+            }
+
+            <div class="div-category">
+                <div class="div-selection-title">
+                    <h2 class="product-selection-title">@category</h2>
+                </div>
+
+                <div class="product-grid">
+                    @foreach (var product in Model.menu._products)
+                    {
+                        @if (product.seoKeywords == category && product.seoKeywords != "" && product.type != "Modifier")
+                        {
+                            bool isFavorite = Model.favoriteProductIds.Contains(product.id);
+                            <a class="product-link lozad" id="@product.id" onclick="openModal('@product.id')">
+                                <div class="product-tile">
+                                    <div class="product-favorite @(isFavorite ? "favorited" : "")" id="favorite-@product.id" onclick="toggleFavorite('@product.id'); event.stopPropagation();">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-heart">
+                                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="product-image">
+                                        <img src="@(product.imageLinks != null && product.imageLinks.Length > 0 ? product.imageLinks[0] : "")" alt="@product.name" loading="lazy" />
+                                    </div>
+                                    <div class="product-details">
+                                        <p class="product-name">@product.name</p>
+                                        <p class="product-description">@product.seoDescription</p>
+                                    </div>
+                                    <div class="product-bottom">
+                                        <div class="product-price">от @product.sizePrices[0].price.currentPrice ₽</div>
+                                        <div class="product-button">
+                                            <button>Выбрать</button>
+                                        </div>
+                                        <div>Вес: @((product.weight * 1000).ToString("#")) г</div>
+                                    </div>
+                                </div>
+                            </a>
+                        }
+                    }
+                </div>
+            </div>
+        }
+    </div>
+    <div class="container">
+        <div class="reviews-and-map">
+            <div class="reviews-container">
+                <div class="reviews-header">Отзывы</div>
+                <div class="review-list">
+                    @foreach (var review in Model.reviews)
+                    {
+                        <div class="review-item" onclick="toggleReviewText(this)" data-full-text="@review.ReviewText">
+                            <div class="review-author-and-date">
+                                <span class="review-author">
+                                    @(review.Customer.User.FirstName ?? "Какой-то клиент без имени")
+                                </span>
+                                <span class="review-date">
+                                    @review.ReviewDate.ToString("dd MMMM HH:mm", new CultureInfo("ru-RU"))
+                                </span>
+                            </div>
+                            <div class="review-rating">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    <a href="#" class="fas fa-star @(i <= review.Rating ? "star-wrapper-active" : "")"></a>
+                                }
+                            </div>
+                            <div class="review-text">
+                                @review.ReviewText
+                                <span class="review-more" style="display: none;">ещё</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+                @if (User.Identity.IsAuthenticated)
+                {
+                    <div class="leave-review-button">
+                        <button onclick="openReviewModal()">Оставить отзыв</button>
+                    </div>
+                }
+            </div>
+            <div class="map-container">
+                <div class="map-header">Мы находимся по адресу: Отрадное, Детский переулок 1</div>
+                <div id="mapStatic"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="product-modal-container"></div>
+    <div id="cart-modal-container"></div>
+    <div id="auth-modal-container"></div>
+    <div id="select-address-modal-container"></div>
+    <div id="add-review-modal-container"></div>
+
+    @section Scripts {
+        <script>
+            $(document).ready(function () {
+                var cart = @Html.Raw(Json.Serialize(Model.cart));
+                console.log('Loaded cart:', cart);
+
+                console.log('Test', cart.items.length);
+
+                // Проверяем, что cart определен и имеет поле Items, которое является массивом
+                if (cart.items.length > 0) {
+                    updateButtonCart(cart);
+                } else {
+                    console.log('Cart is undefined or does not have expected structure');
+                }
+
+                
+                // console.log('User: ', @Html.Raw(Json.Serialize(Model.userName)));
+                // var authButton = document.getElementById('auth-button');
+                // if (authButton) {
+                //     var isAuthenticated = @Html.Raw(Json.Serialize(Model.userName != ""));
+                //     console.log('Is authenticated:', isAuthenticated);
+                //     if (isAuthenticated) {
+                //         authButton.innerText = 'Профиль';
+                //     } else {
+                //         authButton.innerText = 'Войти';
+                //     }
+                // }
+            });
+
+            function initMap() {
+                var map = new ymaps.Map("mapStatic", {
+                    center: [59.762524, 30.782741], // координаты вашего кафе
+                    zoom: 15
+                });
+
+                var placemark = new ymaps.Placemark([59.762524, 30.782741], {
+                    hintContent: 'Доставка "Чёза"',
+                    balloonContent: 'Мы здесь! А ещё здесь кафе Апрель!'
+                });
+
+                map.geoObjects.add(placemark);
+            }
+
+            ymaps.ready(initMap);
+
+            function toggleFavorite(productId) {
+                var favoriteIcon = $('#favorite-' + productId);
+
+                $.ajax({
+                    type: "POST",
+                    url: "/Home/ToggleFavorite",
+                    data: JSON.stringify({ productId: productId }),
+                    contentType: "application/json",
+                    success: function (response) {
+                        if (response.success) {
+                            favoriteIcon.toggleClass('favorited');
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        if (xhr.status == 401) {
+                            alert('Необходимо авторизоваться!');
+                        } else {
+                            alert('Произошла ошибка. Пожалуйста, попробуйте снова.');
+                        }
+                    }
+                });
+            }
+
+
+            function openModal(productId) {
+                // $('body').addClass('modal-open');
+
+                var scrollbarWidth = getScrollbarWidth();
+                $('body').css({
+                    'overflow-y': 'hidden',
+                    'padding-right': scrollbarWidth + 'px'
+                });
+                
+
+                $.get('@Url.Action("GetProductDetails", "Home")', { id: productId }, function (data) {
+                    $('#product-modal-container').html(data);
+                    $('#product-modal').show();
+                });
+            }
+
+            function openCartModal() {
+                var scrollbarWidth = getScrollbarWidth();
+                $('body').css({
+                    'overflow-y': 'hidden',
+                    'padding-right': scrollbarWidth + 'px'
+                });
+                
+                $.get('@Url.Action("GetCart", "Cart")', function (data) {
+                    $('#cart-modal-container').html(data);
+                    $('#cart-modal').show();
+                });
+            }
+
+            function openAuthModal() {
+                var scrollbarWidth = getScrollbarWidth();
+                $('body').css({
+                    'overflow-y': 'hidden',
+                    'padding-right': scrollbarWidth + 'px'
+                });
+
+                var button = document.getElementById('auth-button');
+                var text = button.innerText;
+                console.log('Text: ', text);
+                if (text == "Войти") {
+                    $.get('@Url.Action("GetAuth", "Auth")', function (data) {
+                        $('#auth-modal-container').html(data);
+                        $('#auth-modal').show();
+                    });
+                }
+                else if (text == "Профиль") {
+                    openProfile();
+                }
+                
+            }
+
+            function openReviewModal() {
+                var scrollbarWidth = getScrollbarWidth();
+                $('body').css({
+                    'overflow-y': 'hidden',
+                    'padding-right': scrollbarWidth + 'px'
+                });
+
+                $.get('@Url.Action("GetReviewModal", "Profile")', {orderId : 0}, function (data) {
+                    $('#add-review-modal-container').html(data);
+                    $('#review-modal').show();
+                });
+            }
+
+            function openProfile() {
+                var scrollbarWidth = getScrollbarWidth();
+                $('body').css({
+                    'overflow-y': 'hidden',
+                    'padding-right': scrollbarWidth + 'px'
+                });
+
+                window.location.href = '@Url.Action("Profile", "Profile")';
+            }
+
+            function closeModal() {
+                $('#product-modal').hide();
+            }
+
+            document.addEventListener("DOMContentLoaded", function () {
+                const reviews = document.querySelectorAll('.review-item .review-text');
+
+                reviews.forEach(review => {
+                    const fullText = review.textContent.trim();
+                    if (fullText.length > 100) {
+                        review.textContent = fullText.substring(0, 100);
+                        const moreSpan = document.createElement('span');
+                        moreSpan.className = 'review-more';
+                        moreSpan.textContent = '...ещё';
+                        review.appendChild(moreSpan);
+                    }
+                });
+            });
+
+            function toggleReviewText(element) {
+                const reviewText = element.querySelector('.review-text');
+                const fullText = element.getAttribute('data-full-text');
+                if (reviewText.classList.contains('expanded')) {
+                    reviewText.classList.remove('expanded');
+                    reviewText.textContent = fullText.substring(0, 100);
+                    const moreSpan = document.createElement('span');
+                    moreSpan.className = 'review-more';
+                    moreSpan.textContent = '...ещё';
+                    reviewText.appendChild(moreSpan);
+                } else {
+                    reviewText.classList.add('expanded');
+                    reviewText.textContent = fullText;
+                }
+            }
+
+            // Обновление кнопки корзины
+            function updateButtonCart(cart) {
+
+                console.log('Cart: ', cart);
+
+                var totalQuantity = 0;
+
+                cart.items.forEach(item => {
+                    totalQuantity++;
+                });
+
+                var cartItemsCount = document.querySelectorAll('.d-cart-product').length;
+                cartContainer = document.getElementById('cart-container');
+                var cartImagesContainer = cartContainer.querySelector('#cart-images');
+                var cartCountElement = cartContainer.querySelector('#cart-quantity');
+                var cartAmountElement = cartContainer.querySelector('#cart-amount');
+
+                cartImagesContainer.innerHTML = '';
+                cartCountElement.innerHTML = '';
+                cartAmountElement.innerHTML = '';
+
+                cart.items.slice(0, 3).forEach(item => {
+                    var imgElement = createCartItemImage(item);
+                    cartImagesContainer.appendChild(imgElement);
+                });
+
+                cartCountElement.textContent = totalQuantity;
+
+                var totalAmount = 0.0;
+
+                cart.items.forEach(item => {
+                    var amount = 0.0;
+                    amount += item.product.sizePrices[0].price.currentPrice;
+                    item.modifiers.forEach(modifier => {
+                        amount += modifier.sizePrices[0].price.currentPrice;
+                    });
+                    totalAmount += amount * item.quantity;
+                });
+
+                cartAmountElement.textContent = totalAmount + ' ₽';
+
+                if (totalQuantity > 0) {
+                    console.log('Отображаю');
+                    cartContainer.style.display = "block"; // Отображаем корзину, если есть товары и элементы корзины
+                } else {
+                    console.log('Не отображаю');
+                    cartContainer.style.display = "none"; // Скрываем корзину, если нет товаров или элементов корзины
+                }
+            }
+            function createCartItemImage(item) {
+                var imgElement = document.createElement('img');
+                imgElement.src = item.product.imageLinks[0];
+                imgElement.classList.add('cart-item-image');
+                return imgElement;
+            }
+        </script>
+    }
+
+</body>

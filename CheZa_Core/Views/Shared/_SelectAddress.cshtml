@@ -1,0 +1,159 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+@using CheZa_Core.Models.Entities;
+
+@model List<Address>
+
+<div id="select-address-modal" class="d-modal-screen">
+    <div class="select-address-modal-container">
+        <div class="select-address-modal-top">
+            <img src="/Resources/crossCloseCard.svg" onclick="closeModal()" />
+        </div>
+        <div class="select-address-modal-content">
+            <div class="select-address-modal-content-container">
+                <h2>Выберите адрес</h2>
+                <div class="select-address-list">
+                    @*Список адресов*@
+                    @{
+                        if (Model.Count == 0)
+                        {
+                            <h3>У вас нету адресов для доставки, самое время добавить!</h3>
+                        }
+                        foreach (var address in Model)
+                        {
+                                <div class="select-address-list-item" onclick="selectAddress(this)"
+                                     data-address-id="@address.AddressId"
+                                     data-city="@address.City.CityName"
+                                     data-street-address="@address.StreetAddress"
+                                     data-house="@address.House"
+                                     data-floor="@address.Floor"
+                                     data-apartment="@address.Apartment">
+                                    <div class="select-address-list-item-img">
+                                        <div class="select-address-list-item-img-container">
+                                            <img src="~/Resources/location.svg" />
+                                        </div>
+                                    </div>
+                                    <div class="select-address-list-item-address">
+                                        <div>
+                                            @address.StreetAddress
+                                        </div>
+                                        <div>
+                                            @{
+                                            string partAddress = "Дом " + address.House;
+                                            if (address.Floor != null)
+                                            {
+                                                partAddress += ", этаж " + address.Floor;
+                                            }
+                                            if (address.Apartment != null)
+                                            {
+                                                partAddress += ", квартира " + address.Apartment;
+                                            }
+                                                    <span>@partAddress</span>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="select-address-list-item-arrow">
+                                        <img src="~/Resources/arrow-right.svg" />
+                                    </div>
+                                </div>
+                        }
+                    }
+                </div>
+                <div class="select-address-btn-add">
+                    @*Кнопка добавить адрес*@
+                    <button class="button-continue" onclick="openAddAddressModal()">Добавить адрес</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="address-modal-container-select"></div>
+
+<script>
+    function openAddAddressModal(addressId) {
+        closeModalAfterAdd();
+
+        var scrollbarWidth = getScrollbarWidth();
+        $('body').css({
+            'overflow-y': 'hidden',
+            'padding-right': scrollbarWidth + 'px'
+        });
+
+        console.log('Отправляю запрос на открытие');
+        $.get('@Url.Action("AddAddress", "Profile")', { addressId: 0 }, function (data) {
+            $('#address-modal-container-select').html(data);
+            $('#address-modal').show();
+        });
+    }
+
+
+    var checkbox = document.querySelector('.switch-button-checkbox');
+    var label = document.querySelector('.switch-button-label');
+    function closeModal() {
+        checkbox.checked = false;
+        label.setAttribute('data-text', 'Самовывоз');
+        document.getElementById('delivery-type').innerText = 'Адрес самовывоза:';
+        document.getElementById('delivery-address').innerText = 'Отрадное, Детский переулок 1';
+        document.getElementById('select-address-modal').style.display = 'none';
+    }
+
+    function closeModalAfterAdd() {
+        document.getElementById('select-address-modal').style.display = 'none';
+
+        $('body').css({
+            'overflow-y': '',
+            'padding-right': ''
+        });
+    }
+
+    function selectAddress(element) {
+        var addressId = element.getAttribute('data-address-id');
+        var city = element.getAttribute('data-city');
+        var streetAddress = element.getAttribute('data-street-address');
+        var house = element.getAttribute('data-house');
+        var floor = element.getAttribute('data-floor');
+        var apartment = element.getAttribute('data-apartment');
+
+        var fullAddress = streetAddress + ', Дом ' + house;
+        if (floor) {
+            fullAddress += ', Этаж ' + floor;
+        }
+        if (apartment) {
+            fullAddress += ', Квартира ' + apartment;
+        }
+
+        console.log('Выбранный адрес:', fullAddress);
+
+        var address = city + ', ' + streetAddress + ', ' + house;
+
+        console.log('Address id: ', addressId);
+
+        $.ajax({
+            type: "POST",
+            url: "/Profile/SetSelectAddress",
+            contentType: 'application/json',
+            data: JSON.stringify(addressId),
+            success: function (response) {
+                if (response.success) {
+                    alert(response.message);
+                    label.setAttribute('data-text', 'Доставка');
+                    document.getElementById('delivery-type').innerText = 'Адрес доставки:';
+                    document.getElementById('delivery-address').innerText = address;
+
+                    closeModalAfterAdd();
+                }
+            },
+            error: function (error) {
+                if (error.status == 401) {
+                    alert('Необходимо авторизоваться!');
+                } else {
+                    console.error("Ошибка при отправке адреса на сервер:", error);
+                }
+            }
+        });
+    }
+</script>

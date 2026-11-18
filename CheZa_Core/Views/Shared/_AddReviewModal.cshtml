@@ -1,0 +1,122 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+
+@model int
+
+<div id="review-modal" class="d-modal-screen">
+    <div class="review-modal-container">
+        <div class="review-modal-top">
+            <img src="/Resources/crossCloseCard.svg" onclick="closeModal()" />
+        </div>
+        <div class="review-modal-content">
+            <div class="review-modal-content-container">
+                <div class="review-modal-header-container">
+                    <div class="review-header-main">
+                        Оставьте свой отзыв
+                    </div>
+                    <div class="review-header">
+                        Мы ценим ваше мнение!<br /> Поделитесь впечатлениями о нашем сервисе.
+                    </div>
+                </div>
+                <div class="review-modal-body-container">
+                    <div class="review-modal-rating-container">
+                        <div class="review">
+                            Ваш отзыв
+                        </div>
+                        <div class="stars-container">
+                            <a class="fas fa-star star"></a>
+                            <a class="fas fa-star star"></a>
+                            <a class="fas fa-star star"></a>
+                            <a class="fas fa-star star"></a>
+                            <a class="fas fa-star star"></a>
+                        </div>
+                    </div>
+                    <div class="review-textarea">
+                        <textarea placeholder="Опишите ваш опыт работы с нами. Расскажите, что вам понравилось, а что можно улучшить."></textarea>
+                    </div>
+                </div>
+                <div>
+                    <button id="btnSaveReview" class="button-continue">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function closeModal() {
+        document.getElementById('review-modal').style.display = 'none';
+
+        $('body').css({
+            'overflow-y': '',
+            'padding-right': ''
+        });
+    }
+
+    $(document).ready(function () {
+        // Получаем ссылки на все звёзды
+        const stars = document.querySelectorAll('.stars-container .star');
+
+        // Обработчик клика по звезде
+        stars.forEach(star => {
+            star.addEventListener('click', function () {
+                // Удаляем класс 'fas' и добавляем 'far' для всех звёзд
+                stars.forEach(s => s.classList.replace('fas', 'far'));
+
+                // Добавляем 'fas' для текущей и предыдущих звёзд
+                let clickedIndex = Array.from(stars).indexOf(star);
+                for (let i = 0; i <= clickedIndex; i++) {
+                    stars[i].classList.replace('far', 'fas');
+                }
+            });
+        });
+
+        const saveButton = document.getElementById('btnSaveReview');
+        saveButton.addEventListener('click', function () {
+            const rating = document.querySelectorAll('.stars-container .fas').length;
+            const reviewText = document.querySelector('.review-textarea textarea').value;
+
+            console.log('Оценка:', rating);
+            console.log('Отзыв:', reviewText);
+
+            var review = {
+                orderId: @Model,
+                rating: rating,
+                textReview: reviewText
+            };
+
+
+
+            $.ajax({
+                url: '/Profile/AddReview', // Путь к вашему действию контроллера
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(review),
+                success: function (response) {
+                    if (response.success) {
+                        alert(response.message);
+                    } else {
+                        alert(response.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    // Логика обработки ошибок
+                    console.error('Error adding review', error);
+                }
+            });
+
+            closeModal();
+            // Перезагрузить страницу через 2 секунды
+            setTimeout(function () {
+                window.location.reload();
+            }, 2000); // 2000 миллисекунд = 2 секунды
+        });
+    });
+
+    
+
+    
+</script>

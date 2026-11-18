@@ -1,0 +1,581 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+
+@model AddressViewModel
+
+<div id="address-modal" class="d-modal-screen">
+    <div class="address-modal-container">
+        <div class="address-modal-top">
+            <img src="/Resources/crossCloseCard.svg" onclick="closeModal()" />
+        </div>
+        <div class="address-modal-content">
+            <div class="address-modal-content-container">
+                <div class="address-modal-content-input">
+                    <div class="address-modal-content-input-container">
+                        <div>
+                            <h2>@(Model.isEdit ? "Редактирование адреса" : "Добавление адреса")</h2>
+                        </div>
+                        <div class="address-modal-input">
+                            <input type="text" id="city-input" placeholder="Город" class="address-input" value="@Model.city" />
+                            <div id="city-suggestions" class="suggestions-container"></div>
+                        </div>
+                        <div class="address-modal-input">
+                            <input type="text" id="street-input" placeholder="Улица" class="address-input" value="@Model.streetAddress" />
+                            <div id="street-suggestions" class="suggestions-container"></div>
+                        </div>
+                        <div id="city-suggestions" class="suggestions-container"></div>
+                        <div class="address-modal-input">
+                            <div>
+                                <input type="text" id="house-input" placeholder="Дом" class="address-input" value="@Model.house" />
+                                <div id="house-suggestions" class="suggestions-container"></div>
+                            </div>
+                            <div>
+                                <input type="text" id="entrance-input" placeholder="Подъезд" class="address-input" value="@Model.entrance" />
+                            </div>
+                        </div>
+                        <div class="address-modal-input">
+                            <div>
+                                <input type="text" id="floor-input" placeholder="Этаж" class="address-input" value="@Model.floor" />
+                            </div>
+                            <div>
+                                <input type="text" id="apartment-input" placeholder="Квартира" class="address-input" value="@Model.apartment" />
+                            </div>
+                        </div>
+                        <div>
+                            <input type="text" id="comment-input" placeholder="Комментарий к адресу" class="address-input" value="@Model.comment" />
+                        </div>
+                        <div class="button-container">
+                            @if (Model.isEdit)
+                            {
+                                <button class="button-continue" onclick="deleteAddress()">Удалить адрес</button>
+                            }
+                            <button class="button-continue" onclick="submitAddress()">@(Model.isEdit ? "Сохранить изменения" : "Добавить адрес")</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="address-modal-content-map">
+                    <div id="map"></div>
+                    <div class="map-marker"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    $(document).ready(function () {
+        console.log('Загружаю адрес');
+        if (@Html.Raw(Json.Serialize(Model.isEdit))) {
+            console.log('Редактирование существующего');
+            // Получаем координаты для отображения на карте, если редактируется адрес
+            var city = @Html.Raw(Json.Serialize(Model.city));
+            var address = @Html.Raw(Json.Serialize(Model.streetAddress));
+            var house = @Html.Raw(Json.Serialize(Model.house));
+            var apartment = @Html.Raw(Json.Serialize(Model.apartment));
+            var entrance = @Html.Raw(Json.Serialize(Model.entrance));
+            var floor = @Html.Raw(Json.Serialize(Model.floor));
+            var comment = @Html.Raw(Json.Serialize(Model.comment));
+
+            document.getElementById('city-input').value = city;
+            document.getElementById('street-input').value = address;
+            document.getElementById('house-input').value = house;
+            document.getElementById('apartment-input').value = apartment;
+            document.getElementById('entrance-input').value = entrance;
+            document.getElementById('floor-input').value = floor;
+            document.getElementById('comment-input').value = comment;
+
+            ymaps.ready(function () {
+                ymaps.geocode(city + ', ' + address + ', ' + house).then(function (res) {
+                    var coords = res.geoObjects.get(0).geometry.getCoordinates();
+                    myMap.setCenter(coords, 16);
+                });
+            });
+        } else {
+            console.log('Создание нового адреса');
+        }
+    });
+
+    var initialCoords = [59.762524, 30.782741];
+    var myMap;
+    var marker;
+    var isDragging = false;
+    var isZooming = false;
+    var isClickProcessed = false;
+
+    ymaps.ready(init);
+    function init() {
+        console.log('Инициализирую карту');
+        myMap = new ymaps.Map("map", {
+            center: initialCoords,
+            zoom: 13,
+            controls: ['geolocationControl', 'zoomControl']
+        });
+
+        marker = document.querySelector('.map-marker');
+
+        function raiseMarker() {
+            if (!isZooming) { // Поднимать маркер только если нет зумирования
+                console.log('Поднимаем маркер');
+                marker.classList.add('raised');
+            }
+        }
+
+        function lowerMarker() {
+            console.log('Опускаем маркер');
+            marker.classList.remove('raised');
+        }
+
+        function getAddress(coords) {
+            console.log('Получаем адрес для координат:', coords);
+            ymaps.geocode(coords).then(function (res) {
+                var firstGeoObject = res.geoObjects.get(0);
+                var addressComponents = firstGeoObject.getAddressLine().split(',');
+                var cityAndStreet = addressComponents.slice(0, -1).join(',').trim();
+                var houseNumber = addressComponents[addressComponents.length - 1].trim();
+
+                console.log('Test get address:');
+                var administrativeAreas = firstGeoObject.getAdministrativeAreas().join(', ');
+                var locality = firstGeoObject.getLocalities().join(', ');
+                var thoroughfare = firstGeoObject.getThoroughfare();
+                var premiseNumber = firstGeoObject.getPremiseNumber();
+
+                console.log("Administrative Areas:", administrativeAreas);
+                console.log("Locality:", locality);
+                console.log("Thoroughfare:", thoroughfare);
+                console.log("Premise Number:", premiseNumber);
+
+                document.getElementById('city-input').value = locality ? locality : "";
+                document.getElementById('street-input').value = thoroughfare ? thoroughfare : "";
+                document.getElementById('house-input').value = premiseNumber ? premiseNumber : "";
+            });
+        }
+
+        // var geocoder = L.Control.geocoder({
+        //     defaultMarkGeocode: false,
+        //     placeholder: 'Поиск адреса...',
+        //     collapsed: false,
+        //     geocoder: L.Control.Geocoder.nominatim()
+        // }).on('markgeocode', function (e) {
+        //     var center = e.geocode.center;
+        //     console.log('Адрес найден:', e.geocode.name);
+        //     myMap.setCenter(center, 16);
+        //     raiseMarker();
+        //     getAddress(center);
+        // }).addTo(myMap);
+
+        // // Функция для обновления координат маркера и полей адреса
+        // function updateAddressFields(result) {
+        //     // Обновляем координаты маркера
+        //     markerCoords = [result.center[0], result.center[1]];
+
+        //     // Обновляем поля адреса
+        //     $('#city-input').val(result.properties.geocoding && result.properties.geocoding.city ? result.properties.geocoding.city : '');
+        //     $('#street-input').val(result.properties.geocoding && result.properties.geocoding.street ? result.properties.geocoding.street : '');
+        //     $('#house-input').val(result.properties.geocoding && result.properties.geocoding.house ? result.properties.geocoding.house : '');
+        // }
+
+        // // Функция для отображения подсказок с использованием Leaflet Control Geocoder
+        // function showSuggestions(inputId, containerId, type) {
+        //     var input = document.getElementById(inputId);
+        //     var container = $('#' + containerId);
+
+        //     // Очищаем контейнер с подсказками
+        //     container.empty();
+
+        //     // Проверяем, что введенное значение не пустое
+        //     var query = input.value.trim();
+        //     if (query === '') {
+        //         return;
+        //     }
+
+        //     // Используем Leaflet Control Geocoder для подсказок
+        //     var geocoder = L.Control.Geocoder.nominatim();
+        //     var params = {};
+
+        //     // Добавляем параметры в зависимости от типа поля
+        //     if (type === 'city') {
+        //         params.countrycodes = 'ru';
+        //     } else if (type === 'street' || type === 'house') {
+        //         // Получаем значение города из поля city-input
+        //         var city = $('#city-input').val().trim();
+        //         if (city !== '') {
+        //             params.city = city;
+        //         }
+        //         params.countrycodes = 'ru';
+        //     }
+
+        //     // Вызываем метод geocode с параметрами
+        //     geocoder.geocode(query, function (results) {
+        //         results.forEach(function (result) {
+        //             var suggestionItem = $('<div></div>').text(result.name);
+        //             suggestionItem.on('click', function () {
+        //                 input.value = result.name;
+        //                 container.empty();
+        //                 var latlng = result.center;
+        //                 myMap.setCenter([latlng.lat, latlng.lng], 15);
+        //                 updateAddressFields(result);
+        //             });
+        //             container.append(suggestionItem);
+        //         });
+        //     }, {
+        //         params: params
+        //     });
+        // }
+
+        // // Привязываем события для полей ввода
+        // $('#city-input').on('input', function () {
+        //     showSuggestions('city-input', 'city-suggestions', 'city');
+        // });
+
+        // $('#street-input').on('input', function () {
+        //     showSuggestions('street-input', 'street-suggestions', 'street');
+        // });
+
+        // $('#house-input').on('input', function () {
+        //     showSuggestions('house-input', 'house-suggestions', 'house');
+        // });
+
+
+        // $(document).click(function (e) {
+        //     if (!$(e.target).closest('.address-modal-input').length) {
+        //         $('.suggestions-container').empty();
+        //     }
+        // });
+
+
+
+        // Обработчик события клика на карте
+        myMap.events.add('click', function (e) {
+            if (isZooming || isClickProcessed) return; // Проверяем, что не в процессе зумирования и клик уже не обработан
+            var coords = e.get('coords');
+            console.log('Клик на карте, координаты:', coords);
+            isClickProcessed = true; // Устанавливаем флаг, что клик обработан
+            raiseMarker();
+            getAddress(coords);
+            myMap.panTo(coords, {
+                delay: 0,
+                flying: true,
+                checkZoomRange: true,
+                duration: 300 // Ускорение анимации панорамирования
+            }).then(function () {
+                console.log('Панорамирование завершено');
+                isClickProcessed = false; // Сбрасываем флаг после завершения панорамирования
+                lowerMarker();
+            });
+        });
+
+        // Обработчик начала перетаскивания карты
+        myMap.events.add('actionbegin', function (e) {
+            var originalEvent = e.get('originalEvent');
+            if (originalEvent && (originalEvent.type === 'wheel' || originalEvent.type === 'dblclick' || originalEvent.type === 'tap')) {
+                return;
+            }
+            console.log('actionbegin - начало перетаскивания');
+            isDragging = true;
+            raiseMarker();
+        });
+
+        // Обработчик завершения перетаскивания карты
+        myMap.events.add('actionend', function (e) {
+            if (isZooming) return; // Не обрабатывать завершение действия во время зумирования
+            console.log('actionend - завершение перетаскивания');
+            if (isDragging) {
+                isDragging = false;
+                var coords = myMap.getCenter();
+                getAddress(coords);
+                lowerMarker();
+            }
+        });
+
+        // Обработчик изменения зума
+        myMap.events.add('boundschange', function (e) {
+            if (e.get('oldZoom') != e.get('newZoom')) {
+                console.log('Изменение зума');
+                isZooming = true;
+                setTimeout(function () {
+                    isZooming = false;
+                }, 200);
+            }
+        });
+
+        // Отключаем поведение scrollZoom
+        myMap.behaviors.disable('scrollZoom');
+    }
+
+   
+
+    document.getElementById('city-input').addEventListener('change', function () {
+        searchAddress();
+    });
+
+    document.getElementById('street-input').addEventListener('change', function () {
+        searchAddress();
+    });
+
+    document.getElementById('house-input').addEventListener('change', function () {
+        searchAddress();
+    });
+
+    function searchAddress() {
+        var city = document.getElementById('city-input').value || "";
+        var street = document.getElementById('street-input').value || "";
+        var house = document.getElementById('house-input').value || "";
+
+        var address = city + ', ' + street + ', ' + house;
+
+        console.log('Ищем адрес:', address);
+
+        ymaps.geocode(address).then(function (res) {
+            var coords = res.geoObjects.get(0).geometry.getCoordinates();
+
+            myMap.setCenter(coords, 16);
+            marker.geometry.setCoordinates(coords); // Обновляем координаты маркера
+            raiseMarker();
+            getAddress(coords);
+        });
+    }
+
+    function deleteAddress() {
+        var id = @Html.Raw(Json.Serialize(Model.addressId));
+        var city = document.getElementById('city-input').value || "";
+        var streetAddress = document.getElementById('street-input').value || "";
+        var house = document.getElementById('house-input').value || "";
+        var entrance = document.getElementById('entrance-input').value || "";
+        var floor = document.getElementById('floor-input').value || "";
+        var apartment = document.getElementById('apartment-input').value || "";
+        var comment = document.getElementById('comment-input').value || "";
+
+        var data = {
+            addressId: id,
+            streetAddress: streetAddress,
+            house: house,
+            city: city,
+            floor: floor === "" ? null : parseInt(floor, 10),
+            entrance: entrance === "" ? null : parseInt(entrance, 10),
+            apartment: apartment === "" ? null : parseInt(apartment, 10),
+            comment: comment,
+            isEdit: @Html.Raw(Json.Serialize(Model.isEdit))
+            };
+
+        console.log('Send data: ', data);
+
+        $.ajax({
+            type: "POST",
+            url: "/Profile/DeleteAddress",
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function (response) {
+                if (response.success) {
+                    alert(response.message);
+                    closeModal();
+                } else {
+                    alert(response.message);
+                }
+            },
+            error: function (error) {
+                if (error.status == 401) {
+                    alert('Необходимо авторизоваться!');
+                } else {
+                    console.error("Ошибка при отправке адреса на сервер:", error);
+                }
+            }
+        });
+    }
+
+    function submitAddress() {
+        var id = @Html.Raw(Json.Serialize(Model.addressId));
+        var city = document.getElementById('city-input').value || "";
+        var streetAddress = document.getElementById('street-input').value || "";
+        var house = document.getElementById('house-input').value || "";
+        var entrance = document.getElementById('entrance-input').value || "";
+        var floor = document.getElementById('floor-input').value || "";
+        var apartment = document.getElementById('apartment-input').value || "";
+        var comment = document.getElementById('comment-input').value || "";
+
+        if (city === "" || streetAddress === "" || house === "") {
+            alert("Выберите адрес!");
+            return;
+        }
+
+        if (comment.length > 200) {
+            alert('Слишком длинный комментарий!');
+            return;
+        }
+
+        var data = {
+            addressId: id,
+            streetAddress: streetAddress,
+            house: house,
+            city: city,
+            floor: floor === "" ? null : parseInt(floor, 10),
+            entrance: entrance === "" ? null : parseInt(entrance, 10),
+            apartment: apartment === "" ? null : parseInt(apartment, 10),
+            comment: comment,
+            isEdit: @Html.Raw(Json.Serialize(Model.isEdit))
+        };
+
+        console.log('Send data: ', data);
+
+        $.ajax({
+            type: "POST",
+            url: "/Profile/SetAddress",
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function (response) {
+                if (response.success) {
+                    console.log("Адрес успешно отправлен на сервер");
+                    alert('Адрес успешно добавлен!');
+                    closeModal();
+                } else if (!response.success && response.message == "Город не найден") {
+                    alert('К сожалению мы не доставляем в данный город(');
+                } else {
+                    alert(response.message);
+                }
+            },
+            error: function (error) {
+                if (error.status == 401) {
+                    alert('Необходимо авторизоваться!');
+                } else {
+                    console.error("Ошибка при отправке адреса на сервер:", error);
+                }
+            }
+        });
+    }
+
+    function closeModal() {
+        document.getElementById('address-modal').style.display = 'none';
+
+        $('body').css({
+            'overflow-y': '',
+            'padding-right': ''
+        });
+    }
+
+    ymaps.ready(init);
+    function init() {
+        var map = new ymaps.Map('map', {
+            center: [55.751574, 37.573856], // Координаты центра карты
+            zoom: 10,
+            controls: ['zoomControl', 'geolocationControl']
+        });
+
+        // Обработчик перемещения карты
+        map.events.add('actionend', function () {
+            var center = map.getCenter();
+            getAddress(center);
+        });
+    }
+
+    function getAddress(coords) {
+        var lat = coords[0];
+        var lon = coords[1];
+        var url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.address) {
+                    var address = data.address;
+                    document.getElementById('city-input').value = address.city || address.town || address.village || '';
+                    document.getElementById('street-input').value = address.road || '';
+                    document.getElementById('house-input').value = address.house_number || '';
+                }
+            })
+            .catch(error => console.error('Ошибка при получении адреса:', error));
+    }
+</script>
+
+@* <script>
+    // Инициализация карты Яндекс
+    ymaps.ready(init);
+    function init() {
+        var map = new ymaps.Map('map', {
+            center: [55.751574, 37.573856], // Координаты центра карты
+            zoom: 10,
+            controls: ['zoomControl', 'geolocationControl']
+        });
+
+        // Обработчик перемещения карты
+        map.events.add('actionend', function () {
+            var center = map.getCenter();
+            getAddress(center);
+        });
+    }
+
+    function getAddress(coords) {
+        var lat = coords[0];
+        var lon = coords[1];
+        var url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.address) {
+                    var address = data.address;
+                    document.getElementById('city-input').value = address.city || address.town || address.village || '';
+                    document.getElementById('street-input').value = address.road || '';
+                    document.getElementById('house-input').value = address.house_number || '';
+                }
+            })
+            .catch(error => console.error('Ошибка при получении адреса:', error));
+    }
+
+    // Функция для получения подсказок от Nominatim только в пределах России с фильтрацией дублей
+    function fetchSuggestions(query) {
+        var url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5&countrycodes=RU&extratags=1`;
+        return fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                const uniqueResults = [];
+                const seenLabels = new Set();
+
+                data.forEach(item => {
+                    // Проверяем, был ли уже добавлен такой результат
+                    if (!seenLabels.has(item.display_name)) {
+                        uniqueResults.push({
+                            label: item.display_name,
+                            lat: item.lat,
+                            lon: item.lon,
+                            address: item.address
+                        });
+                        seenLabels.add(item.display_name);
+                    }
+                });
+
+                return uniqueResults;
+            });
+    }
+
+    // Функция отображения подсказок
+    function showSuggestions(suggestions) {
+        const suggestionsContainer = document.getElementById('city-suggestions');
+        suggestionsContainer.innerHTML = '';
+        suggestions.forEach(suggestion => {
+            const div = document.createElement('div');
+            div.className = 'suggestion-item';
+            div.textContent = suggestion.label;
+            div.addEventListener('click', () => {
+                document.getElementById('city-input').value = suggestion.address.city || suggestion.address.town || suggestion.address.village || '';
+                document.getElementById('street-input').value = suggestion.address.road || '';
+                document.getElementById('house-input').value = suggestion.address.house_number || '';
+                const coords = [parseFloat(suggestion.lat), parseFloat(suggestion.lon)];
+                myMap.setCenter(coords, 16);
+                suggestionsContainer.innerHTML = ''; // Очищаем подсказки после выбора
+            });
+            suggestionsContainer.appendChild(div);
+        });
+    }
+
+    // Обработчик ввода в поле города
+    document.getElementById('city-input').addEventListener('input', async function () {
+        const query = this.value;
+        if (query.length > 2) { // Начинаем поиск после ввода 3 символов
+            const suggestions = await fetchSuggestions(query);
+            showSuggestions(suggestions);
+        }
+    });
+</script> *@

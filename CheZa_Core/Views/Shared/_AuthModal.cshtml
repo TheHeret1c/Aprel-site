@@ -1,0 +1,188 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+
+<div id="auth-modal" class="d-modal-screen">
+    <div class="d-auth-modal-container">
+        <div class="d-auth-modal-top">
+            <img src="/Resources/crossCloseCard.svg" onclick="closeModal()" />
+        </div>
+        <div class="d-auth-modal-content">
+            <div class="d-auth-content-container">
+                <div class="d-auth-content-header">
+                    Привет,<br />
+                    авторизуйтесь!
+                </div>
+                <div class="d-auth-content-text">
+                    Сможете добавлять товары в избранное, <br />
+                    посмотреть историю заказов и быстро <br />
+                    заказать на сохранённые адреса
+                </div>
+                @* <div class="d-auth-phone-input-container">
+                    <input type="tel" id="phone-input" placeholder="+7 XXX XXX-XX-XX" maxlength="18" pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}">
+                </div> *@
+                <div class="d-auth-phone-input-container">
+                    <input type="email" id="email-input" placeholder="Введите вашу почту" maxlength="50">
+                </div>
+                <div class="d-auth-button">
+                    @* <button class="button-continue" onclick="openAuthSMSModal()">Продолжить</button> *@
+                    <button class="button-continue" onclick="sendEmailCode()">Продолжить</button>
+                </div>
+                <div class="d-auth-privacy">
+                    Нажимая «Продолжить», вы соглашаетесь<br />
+                    с политикой конфиденциальности и правилами системы лояльности
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="sms-modal-container"></div>
+
+<script>
+    function closeModal() {
+        document.getElementById('auth-modal').style.display = 'none';
+
+        $('body').css({
+            'overflow-y': '',
+            'padding-right': ''
+        });
+    }
+
+    function startTimer() {
+        var timer = $('#timer');
+        var resendTimeContainer = $('.resend-message');
+        var timeLeft = 60;
+        var timerInterval = setInterval(function () {
+            timeLeft--;
+            timer.text('00:' + (timeLeft < 10 ? '0' : '') + timeLeft);
+            resendTimeContainer.text('Отправить повторно можно через ' + timeLeft + ' сек.');
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                resendTimeContainer.html('<a href="#" id="resend-link">Повторно отправить код</a>');
+                $('#resend-link').click(function (e) {
+                    e.preventDefault();
+                    startTimer();
+                    $.get('@Url.Action("ResendCode", "Auth")', function () {
+                        resendTimeContainer.html('Отправить повторно можно через <span id="resend-time">60</span> сек.');
+                        $('#timer').text('01:00');
+                    });
+                });
+            }
+        }, 1000);
+    }
+
+    function sendEmailCode() {
+        var email = document.getElementById("email-input").value;
+
+        if (!validateEmail(email)) {
+            alert("Введите правильный адрес электронной почты.");
+            return;
+        }
+
+        console.log('Email: ', email);
+        var encodedEmail = encodeURIComponent(email);
+
+        $.get('@Url.Action("GetAuthEmail", "Auth")', { email: encodedEmail }, function (data) {
+            document.getElementById('auth-modal').style.display = 'none';
+            $('#sms-modal-container').html(data);
+            $('#sms-modal').show();
+
+            // Запуск таймера
+            startTimer();
+            console.log('Start timer');
+        });
+    }
+
+    function validateEmail(email) {
+        var re = /^[a-zA-Z0-9._%+-]+\u0040[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        return re.test(email);
+    }
+
+    
+
+    // Поотм вернусь к этому коду
+
+    function openAuthSMSModal() {
+        var numPhone = document.getElementById('phone-input').value;
+
+        if (numPhone.length < 18) {
+            alert("Введите телефон!");
+            return;
+        }
+
+        console.log('Phone: ', numPhone);
+        var encodedPhone = encodeURIComponent(numPhone);
+
+        $.get('@Url.Action("GetAuthSMS", "Auth")', { phone: encodedPhone }, function (data) {
+            document.getElementById('auth-modal').style.display = 'none';
+            $('#sms-modal-container').html(data);
+            $('#sms-modal').show();
+
+            // Запуск таймера
+            startTimer();
+            console.log('Start timer');
+        });
+    }
+
+    // document.getElementById('phone-input').addEventListener('input', formatPhoneNumber);
+    // document.getElementById('phone-input').addEventListener('keydown', handleBackspace);
+
+    function formatPhoneNumber(event) {
+        var input = event.target;
+        var value = input.value;
+
+        // Удаление всех символов, кроме цифр, начиная с четвертого символа
+        var digits = value.replace(/\D/g, '');
+
+        // Удаление лишних 7, если они появляются
+        if (digits.startsWith('7')) {
+            digits = digits.substring(1);
+        }
+
+        // Ограничение количества цифр до 10
+        if (digits.length > 10) {
+            digits = digits.substring(0, 10);
+        }
+
+        // Форматирование номера
+        var formattedValue = '+7';
+
+        if (digits.length > 0) {
+            formattedValue += ' (' + digits.substring(0, 3);
+        }
+        if (digits.length >= 3) {
+            formattedValue += ') ' + digits.substring(3, 6);
+        }
+        if (digits.length >= 6) {
+            formattedValue += '-' + digits.substring(6, 8);
+        }
+        if (digits.length >= 8) {
+            formattedValue += '-' + digits.substring(8, 10);
+        }
+
+        // Установка отформатированного значения обратно в поле ввода
+        input.value = formattedValue;
+    }
+
+    function handleBackspace(event) {
+        var input = event.target;
+        var value = input.value;
+
+        if (event.key === 'Backspace') {
+            var pos = input.selectionStart;
+
+            if (pos > 0) {
+                // Проверяем, является ли символ, который удаляется, пробелом, скобкой или дефисом
+                var charToRemove = value[pos - 1];
+                if (charToRemove === ' ' || charToRemove === '-' || charToRemove === '(' || charToRemove === ')') {
+                    event.preventDefault();
+                    input.setSelectionRange(pos - 1, pos - 1);
+                }
+            }
+        }
+    }
+</script>

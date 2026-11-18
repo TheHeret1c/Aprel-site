@@ -1,0 +1,117 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+
+@model OrderViewModel
+
+<div id="order-modal" class="d-modal-screen">
+    <div class="order-modal-container">
+        <div class="order-modal-top">
+            <img src="/Resources/crossCloseCard.svg" onclick="closeModal()" />
+        </div>
+        <div class="order-modal-content">
+            <div class="order-modal-content-container">
+                <div class="order-header">
+                    <h2>Заказ № @Model.orderId</h2>
+                    <h3> 
+                        @{
+                            double totalAmount = 0;
+                            foreach (var product in Model.products)
+                            {
+                                double sum = 0;
+                                sum += product.product._product.sizePrices[0].price.currentPrice;
+                                foreach (var modifier in product.product._modifiers)
+                                {
+                                    sum += modifier.sizePrices[0].price.currentPrice;
+                                }
+                                totalAmount += sum * product.quantity;
+                            }
+                            <span>Сумма: @totalAmount рублей</span>
+                        }
+                    </h3>
+                </div>
+                <div class="order-products-content">
+                    <h4>Товары:</h4>
+                    <div class="order-product-list">
+                        @{
+                            foreach (var product in Model.products)
+                            {
+                                <div class="order-product-list-item">
+                                    <div class="order-product-list-item-img">
+                                        <img src="@(product.product._product.imageLinks != null && product.product._product.imageLinks.Length > 0 ? product.product._product.imageLinks[0] : "")" alt="@product.product._product.name" />
+                                    </div>
+                                    <div class="order-product-list-item-description">
+                                        @{
+                                            var description = product.product._product.seoDescription;
+                                            if (product.product._modifiers.Count > 0)
+                                            {
+                                                var additionalDescription = " Модификаторы:";
+                                                @foreach (var modifier in product.product._modifiers)
+                                                {
+                                                    additionalDescription += " " + modifier.name;
+                                                }
+                                                description += additionalDescription;
+                                            }
+                                            <span>@description</span>
+                                        }
+                                    </div>
+                                    <div class="order-product-list-item-count">
+                                        <div>@product.quantity шт</div>
+                                        <div>
+                                            @{
+                                                var sum = 0.0;
+                                                foreach (var modifier in product.product._modifiers)
+                                                {
+                                                    sum += modifier.sizePrices[0].price.currentPrice;
+                                                }
+                                                sum += product.product._product.sizePrices[0].price.currentPrice;
+                                                sum = sum * product.quantity;
+
+                                                <span>@sum ₽</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+                <div class="order-review-button-container">
+                    @if (!Model.haveReview)
+                    {
+                        <button onclick="openReviewModal()" class="button-continue">Оставить отзыв</button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="add-review-modal-container"></div>
+
+<script>
+    function closeModal() {
+        document.getElementById('order-modal').style.display = 'none';
+
+        $('body').css({
+            'overflow-y': '',
+            'padding-right': ''
+        });
+    }
+
+    function openReviewModal() {
+        closeModal();
+        var scrollbarWidth = getScrollbarWidth();
+        $('body').css({
+            'overflow-y': 'hidden',
+            'padding-right': scrollbarWidth + 'px'
+        });
+
+        $.get('@Url.Action("GetReviewModal", "Profile")', { orderId: @Model.orderId }, function (data) {
+            $('#add-review-modal-container').html(data);
+            $('#review-modal').show();
+        });
+    }
+</script>

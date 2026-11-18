@@ -1,0 +1,604 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+
+
+}
+@using Newtonsoft.Json
+
+@model AllCartViewModel 
+
+<div id="cart-modal" class="d-modal-screen">
+    <div class="d-cart-modal-container">
+        <div class="d-modal-top">
+            <img src="/Resources/crossCloseCard.svg" onclick="closeModal()" />
+        </div>
+        <div class="d-cart-content">
+            <div class="d-cart-up-container"> @*Верх*@
+                <div class="d-cart-details"> @*Левая часть*@
+                    <div class="d-cart-details-container"> @*Контейнер*@
+                        <div class="d-cart-header"> @*Корзина и ваш заказ*@
+                            <h3>
+                                Корзина
+                            </h3>
+                            <h4>
+                                Ваш заказ:
+                            </h4>
+                        </div>
+                        <div class="d-cart-details-products"> @*Список*@
+                            @{
+                                if (Model == null)
+                                {
+                                                <p>Ваша корзина пуста!</p>
+                                }
+                                else
+                                {
+                                    foreach (var product in Model.cart.Items)
+                                    {
+                                        <div id="product-@product.product.id" class="d-cart-product">
+                                            <div class="d-product-image">
+                                                <picture>
+                                                    <img src="@(product.product.imageLinks != null && product.product.imageLinks.Length > 0 ? product.product.imageLinks[0] : "")" alt="@product.product.name" />
+                                                </picture>
+                                            </div>
+                                            <div class="d-product-details">
+                                                <div class="d-product-description-container">
+                                                    <div class="d-product-name">
+                                                        <h5>@product.product.name</h5>
+                                                    </div>
+                                                    <div class="d-product-description">
+                                                        @{
+                                                            var description = product.product.seoDescription;
+                                                            if (product.modifiers.Count > 0)
+                                                            {
+                                                                Console.WriteLine("Count modifiers: " + product.modifiers.Count);
+                                                                var additionalDescription = " Модификаторы:";
+                                                                @foreach (Product modifier in product.modifiers)
+                                                                {
+                                                                    additionalDescription += " " + modifier.name;
+                                                                }
+                                                                description += additionalDescription;
+                                                            }
+                                                            <span>@description</span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                                <div class="d-product-price-container">
+                                                    <div class="d-product-price">
+                                                        @if (product.modifiers != null)
+                                                        {
+                                                            Console.WriteLine("Product id: " + product.product.id);
+                                                            var sum = product.product.sizePrices[0].price.currentPrice;
+                                                            foreach (Product modifier in product.modifiers)
+                                                            {
+                                                                sum += modifier.sizePrices[0].price.currentPrice;
+                                                            }
+                                                            sum = sum * product.quantity;
+                                                            <span> @sum  ₽</span>
+                                                        }
+                                                    </div>
+                                                    <div class="d-product-count">
+                                                        <div class="d-product-count-container">
+                                                            <div class="d-product-quantity">
+                                                                @product.quantity
+                                                            </div>
+                                                            <div class="d-selector-quantity">
+                                                                @{
+                                                                    List<string> modifiers = new List<string>();
+                                                                    if (product.modifiers != null)
+                                                                    {
+                                                                        foreach (var addModifier in product.modifiers)
+                                                                        {
+                                                                            modifiers.Add(addModifier.id);
+                                                                        }
+                                                                    }
+                                                                    var serializedModifiers = JsonConvert.SerializeObject(modifiers);
+                                                                }
+                                                                <div style="padding-right: 5px; color: #000;">
+                                                                    <span onclick="decrease('@product.product.id', '@serializedModifiers')">-</span>
+                                                                </div>
+                                                                <div class="vertical-line">
+                                                                </div>
+                                                                <div style="padding-left: 5px; color: #000;">
+                                                                    <span onclick="increase('@product.product.id', '@serializedModifiers')">+</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="d-payment-type"> @*Правая часть оплата*@
+                    <div class="d-payment-type-container"> @*Контейнер оплаты*@
+                        @if (Model.priceDelivery > 0)
+                        {
+                            <div class="d-total-amount">
+                                <div><b>Доставка</b></div>
+                                <div><b>@Model.priceDelivery ₽</b></div>
+                            </div>
+                        }
+                        <div class="d-total-amount">
+                            @{
+                                var totalSum = 0.0;
+                                foreach (var product in Model.cart.Items)
+                                {
+                                    var localSum = 0.0;
+                                    localSum += product.product.sizePrices[0].price.currentPrice;
+
+                                    foreach (var modifier in product.modifiers)
+                                    {
+                                        localSum += modifier.sizePrices[0].price.currentPrice;
+                                    }
+
+                                    totalSum += localSum * product.quantity;
+                                }
+                            }
+
+                            <div><b>К оплате</b></div>
+                            <div><b id="total-sum">@(totalSum + Model.priceDelivery) ₽</b></div>
+                        </div>
+                        <div class="d-type">
+                            <div>
+                                <b>Выберите вариант оплаты</b>
+                            </div>
+                        </div>
+                        <div class="d-select-type">
+                            <select>
+                                <option value="cash">Наличными при получении</option>
+                                <option value="transaction">Переводом при получении</option>
+                            </select>
+                        </div>
+                        <div class="order-comment-container">
+                            <textarea id="order-comment" class="order-comment" rows="4" maxlength="200" placeholder="Введите комментарий..."></textarea>
+                            <div class="order-comment-info">
+                                Осталось символов: <span id="order-remaining-chars" class="order-remaining-chars">200</span>
+                            </div>
+                        </div>
+                        <div class="d-button-continue">
+                            <button class="button-continue" onclick="confirmOrder()">Продолжить</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="d-cart-down-container"> @*Низ*@
+                <div> @*Рекомендуем*@
+                    <h4>Рекомендуем также попробовать:</h4>
+                </div>
+                <div class="d-recommend"> @*Рекомендованные товары*@
+                    @* Здесь будут рекомендованные товары *@
+                    @{
+                        foreach (var menuProduct in Model.menu._products)
+                        {
+                            if (menuProduct.name == "Фри" || menuProduct.name == "Эби темпура" || menuProduct.name == "Чизкейк малиновый" || menuProduct.name == "Лесная" || menuProduct.name == "Золотая рыбка" || menuProduct.name == "Удон с курой")
+                            {
+                                <div class="d-recommend-product">
+                                    <div class="d-recommend-image">
+                                        <img src="@(menuProduct.imageLinks != null && menuProduct.imageLinks.Length > 0 ? menuProduct.imageLinks[0] : "")" alt="@menuProduct.name" />
+                                    </div>
+                                    <div class="d-recommend-description">
+                                        <div>
+                                            <span>@menuProduct.name</span>
+                                        </div>
+                                        <div class="d-recommend-bottom">
+                                            <div>
+                                                <span>@menuProduct.sizePrices[0].price.currentPrice ₽</span>
+                                            </div>
+                                            <div class="d-recommend-button" data-product-id="@menuProduct.id">
+                                                @{
+                                                    bool isInCart = false;
+                                                    CartItemViewModel saveProduct = null;
+                                                    foreach (var product in Model.cart.Items)
+                                                    {
+                                                        if (product.product.id == menuProduct.id && product.modifiers.Count == 0)
+                                                        {
+                                                            saveProduct = product;
+                                                            isInCart = true;
+                                                            break; // Прекращаем поиск, так как нашли нужный продукт
+                                                        }
+                                                    }
+                                                    if (isInCart && saveProduct != null)
+                                                    {
+                                                        <div class="d-recommend-quantity">
+                                                            <div onclick="decrease('@saveProduct.product.id')">
+                                                                -
+                                                            </div>
+                                                            <div id="recommend-product-quantity-@saveProduct.product.id">
+                                                                @saveProduct.quantity
+                                                            </div>
+                                                            <div onclick="increase('@saveProduct.product.id')">
+                                                                +
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        Console.WriteLine("Create label add in cart.");
+                                                        <span onclick="addRecommendToCart('@menuProduct.id')">В корзину</span>
+                                                    }
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var selectedModifierIds = [];
+    var totalPrice = 0.0;
+
+    function closeModal() {
+        document.getElementById('cart-modal').style.display = 'none';
+        resetModal();
+
+        $('body').css({
+            'overflow-y': '',
+            'padding-right': ''
+        });
+    }
+
+    function increase(productID, modifiers) {
+        console.log("increase called with productID:", productID, "modifiers:", modifiers);
+
+        // Преобразование модификаторов в массив, если они не массив
+        if (typeof modifiers === "string") {
+            modifiers = JSON.parse(modifiers);
+        }
+
+        var orderItem = {
+            ProductId: productID,
+            SelectedModifiersId: modifiers,
+            TotalPrice: 0
+        };
+        console.log("orderItem: ", orderItem);
+        console.log("modifiers: ", modifiers);
+
+        $.ajax({
+            url: '/Cart/IncreaseQuantity', // Путь к вашему действию контроллера
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(orderItem),
+            success: function (response) {
+                // Логика обработки успешного ответа сервера
+                console.log('Product quantity increased:', response);
+                if (response.success) {
+                    // Обновляем интерфейс корзины (например, количество товаров)
+                    console.log("Response from server:", response);
+                    updateCart(response.cart);
+                }
+            },
+            error: function (xhr, status, error) {
+                // Логика обработки ошибок
+                console.error('Error increasing product quantity:', error);
+            }
+        });
+    }
+
+    function decrease(productID, modifiers) {
+        console.log("decrease called with productID: ", productID, "modifiers: ", modifiers);
+
+        // Преобразование модификаторов в массив, если они не массив
+        if (typeof modifiers === "string") {
+            modifiers = JSON.parse(modifiers);
+        }
+
+        var orderItem = {
+            ProductId: productID,
+            SelectedModifiersId: modifiers,
+            TotalPrice: 0
+        };
+        console.log("orderItem: ", orderItem);
+        console.log("modifiers: ", modifiers);
+
+        $.ajax({
+            url: '/Cart/DecreaseQuantity', // Путь к вашему действию контроллера
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(orderItem),
+            success: function (response) {
+                // Логика обработки успешного ответа сервера
+                console.log('Product quantity increased:', response);
+                if (response.success) {
+                    // Обновляем интерфейс корзины (например, количество товаров)
+                    console.log("Response from server:", response);
+                    updateCart(response.cart);
+                }
+            },
+            error: function (xhr, status, error) {
+                // Логика обработки ошибок
+                console.error('Error increasing product quantity:', error);
+            }
+        });
+    }
+
+    function updateRecommendButton(productId, quantity) {
+        var buttonElement = document.querySelector(`.d-recommend-button[data-product-id="${productId}"]`);
+        console.log('Перед каким-то ифом');
+        if (!buttonElement) return;
+
+        console.log('Готовлюсь');
+
+        if (quantity > 0) {
+            console.log('Больше нуля');
+            buttonElement.innerHTML = `
+                <div class="d-recommend-quantity">
+                    <div onclick="decrease('${productId}')">-</div>
+                    <div id="recommend-product-quantity-${productId}">${quantity}</div>
+                    <div onclick="increase('${productId}')">+</div>
+                </div>`;
+        } else {
+            console.log('Удаляю');
+            buttonElement.innerHTML = `<span onclick="addRecommendToCart('${productId}')">В корзину</span>`;
+        }
+    }
+
+    function updateCart(cart) {
+        // Проверка наличия и структуры объекта cart
+        if (!cart || !cart.items || !Array.isArray(cart.items)) {
+            console.error("Invalid cart data:", cart);
+            return;
+        }
+        var amount = 0.0;
+        var cartDetailsProducts = document.querySelector('.d-cart-details-products'); // Объявляем переменную здесь
+        var totalQuantity = 0;  // Новая переменная для общего количества товаров
+
+        // Пример обновления количества и цены
+        cart.items.forEach(item => {
+            var productElement = document.getElementById('product-' + item.product.id);
+            var recommendProductElement = document.getElementById('recommend-product-quantity-' + item.product.id);
+
+            // Если элемент товара не найден, создаем и добавляем его
+            if (!productElement) {
+                var newItemHtml = createCartItemElement(item);
+                cartDetailsProducts.insertAdjacentHTML('beforeend', newItemHtml);
+                productElement = document.getElementById('product-' + item.product.id);
+            }
+
+            if (productElement) {
+                // Обновляем количество
+                var quantityElement = productElement.querySelector('.d-product-quantity');
+                if (quantityElement) {
+                    console.log("Change quantity. New quantity: ", item.quantity);
+                    quantityElement.textContent = item.quantity;
+                    if (recommendProductElement) {
+                        recommendProductElement.textContent = item.quantity;
+                    }
+                }
+
+                // Обновляем цену
+                var priceElement = productElement.querySelector('.d-product-price span');
+                if (priceElement) {
+                    var sum = item.product.sizePrices[0].price.currentPrice;
+                    item.modifiers.forEach(modifier => {
+                        sum += modifier.sizePrices[0].price.currentPrice;
+                    });
+                    console.log("Change price. New price: ", sum);
+                    priceElement.textContent = (sum * item.quantity) + ' ₽';
+                    amount += sum * item.quantity;
+
+                    totalQuantity += item.quantity;  // Обновляем общее количество товаров
+                }
+            }
+
+            // Обновляем рекомендуемые товары
+            updateRecommendButton(item.product.id, item.quantity);
+        });
+
+        var totalSumElement = document.getElementById('total-sum');
+        totalSumElement.textContent = amount + ' ₽';
+
+        var currentProductElements = document.querySelectorAll('.d-cart-product');
+        currentProductElements.forEach(function (element) {
+            var productId = element.id.replace('product-', '');
+            var inCart = cart.items.some(function (item) {
+                return item.product.id === productId;
+            });
+            if (!inCart) {
+                element.remove();
+                updateRecommendButton(productId, 0);
+            }
+        });
+
+        updateButtonCart(cart);
+
+        console.log("Cart update complete.");
+    }
+
+    function addRecommendToCart(productId) {
+        var orderItem = {
+            ProductId: productId,
+            SelectedModifiersId: selectedModifierIds,
+            TotalPrice: totalPrice
+        };
+
+
+        $.ajax({
+            url: '/Cart/AddToCart', // Путь к вашему действию контроллера
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(orderItem),
+            success: function (response) {
+                // Логика обработки успешного ответа сервера
+                console.log('Recommend product added to cart:', response);
+                // Обновить интерфейс корзины (например, количество товаров)
+                updateCart(response.cart)
+            },
+            error: function (xhr, status, error) {
+                // Логика обработки ошибок
+                console.error('Error adding product to cart:', error);
+            }
+        });
+    }
+
+    function createCartItemElement(item) {
+        var sum = item.product.sizePrices[0].price.currentPrice;
+        item.modifiers.forEach(modifier => {
+            sum += modifier.sizePrices[0].price.currentPrice;
+        });
+        sum = sum * item.quantity;
+
+        var modifiers = item.modifiers.map(modifier => modifier.id);
+        var serializedModifiers = JSON.stringify(modifiers);
+
+        return `
+            <div id="product-${item.product.id}" class="d-cart-product">
+                <div class="d-product-image">
+                    <picture>
+                        <img src="${item.product.imageLinks && item.product.imageLinks.length > 0 ? item.product.imageLinks[0] : ''}" alt="${item.product.name}" />
+                    </picture>
+                </div>
+                <div class="d-product-details">
+                    <div class="d-product-description-container">
+                        <div class="d-product-name">
+                            <h5>${item.product.name}</h5>
+                        </div>
+                        <div class="d-product-description">
+                            <span>${item.product.seoDescription}</span>
+                        </div>
+                    </div>
+                    <div class="d-product-price-container">
+                        <div class="d-product-price">
+                            <span>${sum} ₽</span>
+                        </div>
+                        <div class="d-product-count">
+                            <div class="d-product-count-container">
+                                <div class="d-product-quantity">
+                                    ${item.quantity}
+                                </div>
+                                <div class="d-selector-quantity">
+                                    <div style="padding-right: 5px;">
+                                        <span onclick="decrease('${item.product.id}', '${serializedModifiers}')">-</span>
+                                    </div>
+                                    <div class="vertical-line"></div>
+                                    <div style="padding-left: 5px;">
+                                        <span onclick="increase('${item.product.id}', '${serializedModifiers}')">+</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    function updateButtonCart(cart) {
+
+        var totalQuantity = 0;
+
+        cart.items.forEach(item => {
+            totalQuantity++;
+        });
+
+        var cartItemsCount = document.querySelectorAll('.d-cart-product').length;
+        cartContainer = document.getElementById('cart-container');
+        var cartImagesContainer = cartContainer.querySelector('#cart-images');
+        var cartCountElement = cartContainer.querySelector('#cart-quantity');
+        var cartAmountElement = cartContainer.querySelector('#cart-amount');
+
+        cartImagesContainer.innerHTML = '';
+        cartCountElement.innerHTML = '';
+        cartAmountElement.innerHTML = '';
+
+        cart.items.slice(0, 3).forEach(item => {
+            var imgElement = createCartItemImage(item);
+            cartImagesContainer.appendChild(imgElement);
+        });
+
+        cartCountElement.textContent = totalQuantity;
+
+        var totalAmount = 0.0;
+
+        cart.items.forEach(item => {
+            var amount = 0.0;
+            amount += item.product.sizePrices[0].price.currentPrice;
+            item.modifiers.forEach(modifier => {
+                amount += modifier.sizePrices[0].price.currentPrice;
+            });
+            totalAmount += amount * item.quantity;
+        });
+
+        cartAmountElement.textContent = totalAmount + ' ₽';
+
+        if (totalQuantity > 0) {
+            console.log('Отображаю');
+            cartContainer.style.display = "block"; // Отображаем корзину, если есть товары и элементы корзины
+        } else {
+            console.log('Не отображаю');
+            cartContainer.style.display = "none"; // Скрываем корзину, если нет товаров или элементов корзины
+        }
+    }
+
+    // Подтверждение заказа
+    function confirmOrder() {
+        console.log('Отправляю запрос на заказ');
+
+        var comment = document.getElementById('order-comment').value;
+        // Отправляем данные в контроллер
+        $.ajax({
+            type: 'POST',
+            url: '/Cart/ConfirmOrder',
+            contentType: 'application/json',
+            data: JSON.stringify({ orderComment: comment }),
+            success: function (response) {
+                if (response.success) {
+                    alert('Ответ: ', response.message);
+                    closeModal();
+                    // Дополнительные действия после успешного обновления
+                } else {
+                    console.log('Известная ошибка');
+                    console.error(response.message);  // Debug output
+                    alert('Ошибка добавления заказа: ' + response.message);
+                }
+            },
+            error: function (xhr, status, error) {
+                if (xhr.status == 401) {
+                    alert('Unauthorized. Необходимо авторизоваться!');
+                    document.getElementById('cart-modal').style.display = 'none';
+                    $.get('@Url.Action("GetAuth", "Auth")', function (data) {
+                        $('#auth-modal-container').html(data);
+                        $('#auth-modal').show();
+                    });
+                }
+                else {
+                    console.log('Неизвестная ошибка');
+                    console.error(error);  // Debug output
+                    alert('Ошибка добавления заказа');
+                }
+            }
+        });
+    }
+
+    // Находим элементы на странице
+    var orderCommentTextarea = document.getElementById('order-comment');
+    var orderRemainingCharsSpan = document.getElementById('order-remaining-chars');
+
+    // Функция для обновления информации о количестве оставшихся символов
+    function updateOrderRemainingChars() {
+        const maxLength = parseInt(orderCommentTextarea.getAttribute('maxlength'));
+        const currentLength = orderCommentTextarea.value.length;
+        const remaining = maxLength - currentLength;
+
+        orderRemainingCharsSpan.textContent = remaining;
+    }
+
+    // Слушаем событие ввода текста в поле комментария
+    orderCommentTextarea.addEventListener('input', updateOrderRemainingChars);
+
+    // Инициализация при загрузке страницы (для начального значения)
+    updateOrderRemainingChars();
+</script>
+
+

@@ -1,0 +1,204 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+
+
+<div id="sms-modal" class="d-modal-screen">
+    <div class="d-auth-modal-container">
+        <div class="d-auth-modal-top">
+            <img src="/Resources/crossCloseCard.svg" onclick="closeModal()" />
+        </div>
+        <div class="d-auth-modal-content">
+            <div class="d-auth-content-container">
+                <div class="d-auth-content-header">
+                    Код подтверждения
+                </div>
+                <div class="d-auth-content-text">
+                    @* На номер @ViewData["Phone"] отправлено смс-сообщение с
+                    кодом подтверждения. Введите код и нажмите
+                    «Подтвердить» *@
+                    На вашу почту отправлено сообщение с<br />
+                    кодом подтверждения. Введите код и нажмите<br />
+                    «Подтвердить»
+                </div>
+                @* <div>
+                    Изменить номер
+                </div> *@
+                <div class="sms-code-container">
+                    <div class="sms-code-input">
+                        @* <input type="text" id="sms-code" placeholder="Код из СМС" maxlength="4" style="background-color: transparent;"> *@
+                        <input type="text" id="email-code" placeholder="Введите код" maxlength="4" style="background-color: transparent;">
+                        <div class="timer">
+                            <i class="fas fa-clock"></i> <span id="timer">01:00</span>
+                        </div>
+                    </div>
+                    <div class="resend-message">Отправить повторно можно через <span id="resend-time">60</span> сек.</div>
+                </div>
+                <div class="d-auth-button">
+                    @* <button class="button-continue" onclick="confirmAuth()">Подтвердить</button> *@
+                    <button class="button-continue" onclick="verifyEmailCode()">Подтвердить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    //var code = 0;
+    // $(document).ready(function () {
+    //     $('#sms-modal').on('show.bs.modal', function () {
+    //         startTimer();
+    //         console.log('Start timer');
+    //     });
+
+    //     var phoneNumber = '@ViewData["Phone"]';
+
+    //     console.log('Number: ', phoneNumber);
+
+    //     $.ajax({
+    //         url: '/Auth/GenerateSmsCode', // Путь к вашему действию контроллера
+    //         type: 'POST',
+    //         contentType: 'application/json',
+    //         data: JSON.stringify({phoneNumber: phoneNumber}),
+    //         success: function (response) {
+    //             // Логика обработки успешного ответа сервера
+    //             if (response.success) {
+    //                 // Обновляем интерфейс корзины (например, количество товаров)
+    //                 //code = response.code;
+    //                 console.log('Success');
+    //             }
+    //         },
+    //         error: function (xhr, status, error) {
+    //             // Логика обработки ошибок
+    //             console.error('Error sending SMS code.');
+    //         }
+    //     });
+    // });
+
+    $(document).ready(function () {
+        $('#sms-modal').on('show.bs.modal', function () {
+            startTimer();
+            console.log('Start timer');
+        });
+
+        var email = '@ViewData["Email"]';
+
+        console.log('Number: ', email);
+
+        $.ajax({
+            url: '/Auth/GenerateEmailCode', // Путь к вашему действию контроллера
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ email: email }),
+            success: function (response) {
+                // Логика обработки успешного ответа сервера
+                if (response.success) {
+                    // Обновляем интерфейс корзины (например, количество товаров)
+                    //code = response.code;
+                    console.log('Success');
+                }
+            },
+            error: function (xhr, status, error) {
+                // Логика обработки ошибок
+                console.error('Error sending Email code.');
+            }
+        });
+    });
+
+    function closeModal() {
+        document.getElementById('sms-modal').style.display = 'none';
+
+        $('body').css({
+            'overflow-y': '',
+            'padding-right': ''
+        });
+    }
+
+    function verifyEmailCode() {
+        var code = document.getElementById('email-code').value;
+        console.log('Code user: ', code);
+
+        $.ajax({
+            url: '/Auth/VerifyEmailCode', // Путь к вашему действию контроллера
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ code: code }),
+            success: function (response) {
+                // Логика обработки успешного ответа сервера
+                if (response.success) {
+                    console.log('Response: ', response);
+                    alert('Удача!');
+                    openProfile();
+                }
+                else {
+                    console.log('Response: ', response);
+                    alert('Неудача(');
+                }
+                // Обновить интерфейс корзины (например, количество товаров)
+            },
+            error: function (xhr, status, error) {
+                // Логика обработки ошибок
+                console.error('Repsonse: ', error);
+            }
+        });
+    }
+
+    function confirmAuth() {
+        var code = document.getElementById('sms-code').value;
+        console.log('Code user: ', code);
+
+        $.ajax({
+            url: '/Auth/VerifySMSCode', // Путь к вашему действию контроллера
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ code: code }),
+            success: function (response) {
+                // Логика обработки успешного ответа сервера
+                if (response.success) {
+                    console.log('Response: ', response);
+                    alert('Удача!');
+                    openProfile();
+                }
+                else {
+                    console.log('Response: ', response);
+                    alert('Неудача(');
+                }
+                // Обновить интерфейс корзины (например, количество товаров)
+            },
+            error: function (xhr, status, error) {
+                // Логика обработки ошибок
+                console.error('Repsonse: ', error);
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var timerDisplay = document.getElementById('timer');
+        var resendTimeDisplay = document.getElementById('resend-time');
+        var timeLeft = 60;
+
+        function startTimer() {
+            var timer = setInterval(function () {
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    timerDisplay.textContent = "00:00";
+                    resendTimeDisplay.textContent = "0";
+                } else {
+                    timeLeft--;
+                    var minutes = Math.floor(timeLeft / 60);
+                    var seconds = timeLeft % 60;
+                    timerDisplay.textContent = `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+                    resendTimeDisplay.textContent = timeLeft;
+                }
+            }, 1000);
+        }
+
+        startTimer();
+    });
+
+    function openProfile() {
+        window.location.href = '@Url.Action("Profile", "Profile")';
+    }
+</script>
